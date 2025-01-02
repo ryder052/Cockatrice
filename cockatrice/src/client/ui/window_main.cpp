@@ -282,7 +282,12 @@ void MainWindow::localGameEnded()
 
 void MainWindow::actDeckEditor()
 {
-    tabSupervisor->addDeckEditorTab(nullptr);
+    tabSupervisor->addDeckEditorTab(nullptr, false);
+}
+
+void MainWindow::actSealedDeckEditor()
+{
+    tabSupervisor->addDeckEditorTab(nullptr, true);
 }
 
 void MainWindow::actFullScreen(bool checked)
@@ -649,6 +654,7 @@ void MainWindow::retranslateUi()
     aSinglePlayer->setText(tr("Start &local game..."));
     aWatchReplay->setText(tr("&Watch replay..."));
     aDeckEditor->setText(tr("&Deck editor"));
+    aSealedDeckEditor->setText(tr("&Sealed deck editor"));
     aFullScreen->setText(tr("&Full screen"));
     aRegister->setText(tr("&Register to server..."));
     aForgotPassword->setText(tr("&Restore password..."));
@@ -695,6 +701,8 @@ void MainWindow::createActions()
     connect(aWatchReplay, SIGNAL(triggered()), this, SLOT(actWatchReplay()));
     aDeckEditor = new QAction(this);
     connect(aDeckEditor, SIGNAL(triggered()), this, SLOT(actDeckEditor()));
+    aSealedDeckEditor = new QAction(this);
+    connect(aSealedDeckEditor, SIGNAL(triggered()), this, SLOT(actSealedDeckEditor()));
     aFullScreen = new QAction(this);
     aFullScreen->setCheckable(true);
     connect(aFullScreen, SIGNAL(toggled(bool)), this, SLOT(actFullScreen(bool)));
@@ -780,6 +788,7 @@ void MainWindow::createMenus()
     cockatriceMenu->addAction(aWatchReplay);
     cockatriceMenu->addSeparator();
     cockatriceMenu->addAction(aDeckEditor);
+    cockatriceMenu->addAction(aSealedDeckEditor);
     cockatriceMenu->addSeparator();
     cockatriceMenu->addAction(aFullScreen);
     cockatriceMenu->addSeparator();
@@ -849,7 +858,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(tabSupervisor, SIGNAL(setMenu(QList<QMenu *>)), this, SLOT(updateTabMenu(QList<QMenu *>)));
     connect(tabSupervisor, SIGNAL(localGameEnded()), this, SLOT(localGameEnded()));
     connect(tabSupervisor, SIGNAL(showWindowIfHidden()), this, SLOT(showWindowIfHidden()));
-    tabSupervisor->addDeckEditorTab(nullptr);
+    tabSupervisor->addDeckEditorTab(nullptr, true);
 
     setCentralWidget(tabSupervisor);
 

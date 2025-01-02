@@ -155,9 +155,10 @@ private:
     QDockWidget *filterDock;
     QDockWidget *printingSelectorDock;
     QWidget *centralWidget;
+    bool isSealed;
 
 public:
-    explicit TabDeckEditor(TabSupervisor *_tabSupervisor, QWidget *parent = nullptr);
+    explicit TabDeckEditor(TabSupervisor *_tabSupervisor, QWidget *parent = nullptr, bool _isSealed = false);
     ~TabDeckEditor() override;
     void retranslateUi() override;
     QString getTabText() const override;

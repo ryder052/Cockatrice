@@ -4,11 +4,15 @@
 
 #include <QMap>
 
-#define CARDDBMODEL_COLUMNS 6
+#define CARDDBMODEL_COLUMNS 7
 
-CardDatabaseModel::CardDatabaseModel(CardDatabase *_db, bool _showOnlyCardsFromEnabledSets, QObject *parent)
-    : QAbstractListModel(parent), db(_db), showOnlyCardsFromEnabledSets(_showOnlyCardsFromEnabledSets)
+CardDatabaseModel::CardDatabaseModel(CardDatabase *_db, bool _showOnlyCardsFromEnabledSets, bool _isSealed, QObject *parent)
+    : QAbstractListModel(parent), db(_db), showOnlyCardsFromEnabledSets(_showOnlyCardsFromEnabledSets), isSealed(_isSealed)
 {
+    if (isSealed) {
+        generateSealedPool();
+    }
+    
     connect(db, SIGNAL(cardAdded(CardInfoPtr)), this, SLOT(cardAdded(CardInfoPtr)));
     connect(db, SIGNAL(cardRemoved(CardInfoPtr)), this, SLOT(cardRemoved(CardInfoPtr)));
     connect(db, SIGNAL(cardDatabaseEnabledSetsChanged()), this, SLOT(cardDatabaseEnabledSetsChanged()));
@@ -54,6 +58,11 @@ QVariant CardDatabaseModel::data(const QModelIndex &index, int role) const
             return card->getPowTough();
         case ColorColumn:
             return card->getColors();
+        case Amount:
+        {
+            const int result = cardSealedPool ? cardSealedPool->find(card->getName()).value() : -1;
+            return result == -1 ? tr("\u221E") /* inf symbol */ : QString::number(result);
+        }
         default:
             return QVariant();
     }
@@ -78,6 +87,8 @@ QVariant CardDatabaseModel::headerData(int section, Qt::Orientation orientation,
             return QString(tr("P/T"));
         case ColorColumn:
             return QString(tr("Color(s)"));
+        case Amount:
+            return QString(tr("Amount"));
         default:
             return QVariant();
     }
@@ -107,6 +118,12 @@ bool CardDatabaseModel::checkCardHasAtLeastOneEnabledSet(CardInfoPtr card)
     return false;
 }
 
+void CardDatabaseModel::generateSealedPool()
+{
+    cardSealedPool = QMap<QString, int>();
+    cardSealedPool->insert("Abrade", 10);
+}
+
 void CardDatabaseModel::cardDatabaseEnabledSetsChanged()
 {
     // remove all the cards no more present in at least one enabled set
@@ -126,7 +143,7 @@ void CardDatabaseModel::cardDatabaseEnabledSetsChanged()
 
 void CardDatabaseModel::cardAdded(CardInfoPtr card)
 {
-    if (checkCardHasAtLeastOneEnabledSet(card)) {
+    if ((!cardSealedPool || cardSealedPool->contains(card->getName())) && checkCardHasAtLeastOneEnabledSet(card)) {
         // add the card if it's present in at least one enabled set
         beginInsertRows(QModelIndex(), cardList.size(), cardList.size());
         cardList.append(card);

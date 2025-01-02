@@ -439,7 +439,7 @@ void TabDeckEditor::createCentralFrame()
     connect(&searchKeySignals, SIGNAL(onCtrlC()), this, SLOT(copyDatabaseCellContents()));
     connect(help, &QAction::triggered, this, &TabDeckEditor::showSearchSyntaxHelp);
 
-    databaseModel = new CardDatabaseModel(CardDatabaseManager::getInstance(), true, this);
+    databaseModel = new CardDatabaseModel(CardDatabaseManager::getInstance(), true, isSealed, this);
     databaseModel->setObjectName("databaseModel");
     databaseDisplayModel = new CardDatabaseDisplayModel(this);
     databaseDisplayModel->setSourceModel(databaseModel);
@@ -675,8 +675,8 @@ void TabDeckEditor::loadLayout()
     QTimer::singleShot(100, this, SLOT(freeDocksSize()));
 }
 
-TabDeckEditor::TabDeckEditor(TabSupervisor *_tabSupervisor, QWidget *parent)
-    : Tab(_tabSupervisor, parent), modified(false)
+TabDeckEditor::TabDeckEditor(TabSupervisor *_tabSupervisor, QWidget *parent, bool _isSealed)
+    : Tab(_tabSupervisor, parent), modified(false), isSealed(_isSealed)
 {
     setObjectName("TabDeckEditor");
 
@@ -744,7 +744,7 @@ void TabDeckEditor::retranslateUi()
 
     aDecrement->setText(tr("&Decrement number"));
 
-    deckMenu->setTitle(tr("&Deck Editor"));
+    deckMenu->setTitle(tr("&Sealed Deck Editor"));
 
     cardInfoDock->setWindowTitle(tr("Card Info"));
     deckDock->setWindowTitle(tr("Deck"));
@@ -774,7 +774,7 @@ void TabDeckEditor::retranslateUi()
 
 QString TabDeckEditor::getTabText() const
 {
-    QString result = tr("Deck: %1").arg(nameEdit->text().simplified());
+    QString result = tr(isSealed ? "Sealed Deck: %1" : "Deck: %1").arg(nameEdit->text().simplified());
     if (modified)
         result.prepend("* ");
     return result;

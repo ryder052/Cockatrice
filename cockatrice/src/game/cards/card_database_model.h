@@ -23,13 +23,14 @@ public:
         ManaCostColumn,
         PTColumn,
         CardTypeColumn,
-        ColorColumn
+        ColorColumn,
+        Amount
     };
     enum Role
     {
         SortRole = Qt::UserRole
     };
-    CardDatabaseModel(CardDatabase *_db, bool _showOnlyCardsFromEnabledSets, QObject *parent = nullptr);
+    CardDatabaseModel(CardDatabase *_db, bool _showOnlyCardsFromEnabledSets, bool _isSealed, QObject *parent = nullptr);
     ~CardDatabaseModel() override;
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
@@ -47,10 +48,14 @@ public:
 private:
     QList<CardInfoPtr> cardList;
     QSet<CardInfoPtr> cardListSet; // Supports faster lookups in cardDatabaseEnabledSetsChanged()
+    std::optional<QMap<QString, int>> cardSealedPool;
     CardDatabase *db;
     bool showOnlyCardsFromEnabledSets;
+    bool isSealed;
 
     inline bool checkCardHasAtLeastOneEnabledSet(CardInfoPtr card);
+    void generateSealedPool();
+
 private slots:
     void cardAdded(CardInfoPtr card);
     void cardRemoved(CardInfoPtr card);

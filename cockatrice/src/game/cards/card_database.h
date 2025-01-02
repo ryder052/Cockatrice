@@ -213,6 +213,7 @@ public:
                       bool _landscapeOrientation,
                       int _tableRow,
                       bool _upsideDownArt);
+
     CardInfo(const CardInfo &other)
         : QObject(other.parent()), name(other.name), simpleName(other.simpleName), pixmapCacheKey(other.pixmapCacheKey),
           text(other.text), isToken(other.isToken), properties(other.properties), relatedCards(other.relatedCards),
@@ -376,6 +377,7 @@ public:
     void setCardType(const QString &value);
     const QString getCmc() const;
     const QString getColors() const;
+    const QString getAmount() const;
     void setColors(const QString &value);
     const QString getLoyalty() const;
     const QString getMainCardType() const;

@@ -245,6 +245,8 @@ CardInfo::CardInfo(const QString &_name,
     simpleName = CardInfo::simplifyName(name);
 
     refreshCachedSetNames();
+
+    properties.insert(tr("amount"), -1);
 }
 
 CardInfo::~CardInfo()

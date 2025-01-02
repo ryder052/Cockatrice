@@ -490,9 +490,9 @@ void TabSupervisor::talkLeft(TabMessage *tab)
     removeTab(indexOf(tab));
 }
 
-TabDeckEditor *TabSupervisor::addDeckEditorTab(const DeckLoader *deckToOpen)
+TabDeckEditor *TabSupervisor::addDeckEditorTab(const DeckLoader *deckToOpen, bool isSealed)
 {
-    TabDeckEditor *tab = new TabDeckEditor(this);
+    TabDeckEditor *tab = new TabDeckEditor(this, nullptr, isSealed);
     if (deckToOpen)
         tab->setDeck(new DeckLoader(*deckToOpen));
     connect(tab, SIGNAL(deckEditorClosing(TabDeckEditor *)), this, SLOT(deckEditorClosed(TabDeckEditor *)));

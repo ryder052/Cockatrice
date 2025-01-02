@@ -129,7 +129,7 @@ signals:
     void showWindowIfHidden();
 
 public slots:
-    TabDeckEditor *addDeckEditorTab(const DeckLoader *deckToOpen);
+    TabDeckEditor *addDeckEditorTab(const DeckLoader *deckToOpen, bool isSealed);
     void openReplay(GameReplay *replay);
     void maximizeMainWindow();
 private slots:
