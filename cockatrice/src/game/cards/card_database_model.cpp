@@ -3,16 +3,16 @@
 #include "../filters/filter_tree.h"
 
 #include <QMap>
+#include <QGuiApplication>
+#include <QCursor>
+#include <QThread>
 
 #define CARDDBMODEL_COLUMNS 7
 
 CardDatabaseModel::CardDatabaseModel(CardDatabase *_db, bool _showOnlyCardsFromEnabledSets, bool _isSealed, QObject *parent)
-    : QAbstractListModel(parent), db(_db), showOnlyCardsFromEnabledSets(_showOnlyCardsFromEnabledSets), isSealed(_isSealed)
+    : QAbstractListModel(parent), db(_db), showOnlyCardsFromEnabledSets(_showOnlyCardsFromEnabledSets)
+    , cardSealedPool(_isSealed ? QMap<QString, int>() : std::optional<QMap<QString, int>>())
 {
-    if (isSealed) {
-        generateSealedPool();
-    }
-    
     connect(db, SIGNAL(cardAdded(CardInfoPtr)), this, SLOT(cardAdded(CardInfoPtr)));
     connect(db, SIGNAL(cardRemoved(CardInfoPtr)), this, SLOT(cardRemoved(CardInfoPtr)));
     connect(db, SIGNAL(cardDatabaseEnabledSetsChanged()), this, SLOT(cardDatabaseEnabledSetsChanged()));
@@ -116,12 +116,6 @@ bool CardDatabaseModel::checkCardHasAtLeastOneEnabledSet(CardInfoPtr card)
     }
 
     return false;
-}
-
-void CardDatabaseModel::generateSealedPool()
-{
-    cardSealedPool = QMap<QString, int>();
-    cardSealedPool->insert("Abrade", 10);
 }
 
 void CardDatabaseModel::cardDatabaseEnabledSetsChanged()

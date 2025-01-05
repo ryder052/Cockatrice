@@ -44,6 +44,10 @@ public:
     {
         return cardList[index];
     }
+    auto& getSealedPool() 
+    {
+        return cardSealedPool;
+    }
 
 private:
     QList<CardInfoPtr> cardList;
@@ -51,10 +55,8 @@ private:
     std::optional<QMap<QString, int>> cardSealedPool;
     CardDatabase *db;
     bool showOnlyCardsFromEnabledSets;
-    bool isSealed;
 
     inline bool checkCardHasAtLeastOneEnabledSet(CardInfoPtr card);
-    void generateSealedPool();
 
 private slots:
     void cardAdded(CardInfoPtr card);

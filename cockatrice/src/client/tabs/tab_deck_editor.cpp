@@ -6,6 +6,7 @@
 #include "../../deck/deck_list_model.h"
 #include "../../deck/deck_stats_interface.h"
 #include "../../dialogs/dlg_load_deck_from_clipboard.h"
+#include "../../dialogs/dlg_sealed_setup.h"
 #include "../../game/cards/card_database_manager.h"
 #include "../../game/cards/card_database_model.h"
 #include "../../game/filters/filter_builder.h"
@@ -556,6 +557,13 @@ void TabDeckEditor::showPrintingSelector()
     printingSelectorDock->setVisible(true);
 }
 
+void TabDeckEditor::showSealedSetupDialog()
+{
+    QGuiApplication::restoreOverrideCursor();
+    DlgSealedSetup dlg(databaseModel);
+    dlg.exec();
+}
+
 void TabDeckEditor::restartLayout()
 {
     deckDock->setVisible(true);
@@ -696,6 +704,20 @@ TabDeckEditor::TabDeckEditor(TabSupervisor *_tabSupervisor, QWidget *parent, boo
     refreshShortcuts();
 
     loadLayout();
+
+    if (isSealed) {
+        QTimer::singleShot(0, this, [this]() {
+            if (CardDatabaseManager::getInstance()->getLoadStatus() == LoadStatus::Ok)
+            {
+                showSealedSetupDialog();
+            }
+            else
+            {
+                QGuiApplication::setOverrideCursor(Qt::WaitCursor);
+                connect(CardDatabaseManager::getInstance(), SIGNAL(cardDatabaseLoadingFinished()), this, SLOT(showSealedSetupDialog()));
+            }
+        });
+    }
 }
 
 TabDeckEditor::~TabDeckEditor()

@@ -176,6 +176,7 @@ public:
 public slots:
     void closeRequest() override;
     void showPrintingSelector();
+    void showSealedSetupDialog();
 signals:
     void openDeckEditor(const DeckLoader *deckLoader);
     void deckEditorClosing(TabDeckEditor *tab);
