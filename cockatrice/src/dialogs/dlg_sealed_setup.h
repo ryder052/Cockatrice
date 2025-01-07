@@ -28,6 +28,8 @@ private slots:
     void generateSealedPool();
 
 private:
+    void addCardToSealedPool(CardInfoPtr card) const;
+
     struct PerBoosterWidgets
     {
         QLabel* label = nullptr;
@@ -38,6 +40,12 @@ private:
     CardDatabaseModel* dbModel = nullptr;
     QMap<QString, CardSetPtr> setStrings2Sets;
 
+};
+
+struct BoosterCardList
+{
+    QList<CardInfoPtr> allCards;
+    QMap<const QString, QList<CardInfoPtr>> cardsPerColors;
 };
 
 #endif
