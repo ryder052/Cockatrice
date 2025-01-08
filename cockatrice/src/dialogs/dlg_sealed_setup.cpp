@@ -201,16 +201,23 @@ void DlgSealedSetup::generateSealedPool()
         {
             BoosterCardList* list = nullptr;
 
-            int rarityRoll = randomEngine() % 100;
-            if (rarityRoll < 70)
+            int rarityRoll = randomEngine() % 1000;
+
+            static constexpr int common_chance = 300;
+            static constexpr int uncommon_chance = 500;
+            static constexpr int rare_chance = 175;
+            static constexpr int mythic_chance = 25;
+            static_assert(common_chance + uncommon_chance + rare_chance + mythic_chance == 1000);
+
+            if (rarityRoll < (common_chance))
             {
                 list = &cardsPerRarity["common"];
             }
-            else if (rarityRoll < 91)
+            else if (rarityRoll < (common_chance + uncommon_chance))
             {
                 list = &cardsPerRarity["uncommon"];
             }
-            else if (rarityRoll < 98)
+            else if (rarityRoll < (common_chance + uncommon_chance + rare_chance))
             {
                 list = &cardsPerRarity["rare"];
             }
