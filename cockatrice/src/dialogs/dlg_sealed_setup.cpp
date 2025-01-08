@@ -4,6 +4,7 @@
 #include "../settings/cache_settings.h"
 #include "../game/cards/card_database_manager.h"
 #include "../game/cards/card_database_model.h"
+#include "../game/game_specific_terms.h"
 
 #include <QCheckBox>
 #include <QDate>
@@ -42,7 +43,7 @@ DlgSealedSetup::DlgSealedSetup(CardDatabaseModel* inDbModel, QWidget *parent)
     for (int i = 0; i < boosterWidgets.size(); ++i)
     {
         boosterWidgets[i].label = new QLabel(QString("Booster %1:").arg(i + 1), this);
-        boosterWidgets[i].comboBox = new QLineEdit(this);
+        boosterWidgets[i].comboBox = new QComboBox(this);
 
         QCompleter* completer = new QCompleter(sets, this);
         completer->setCaseSensitivity(Qt::CaseInsensitive);
@@ -63,26 +64,42 @@ DlgSealedSetup::DlgSealedSetup(CardDatabaseModel* inDbModel, QWidget *parent)
     setLayout(layout);
 
     // Populate combo boxes with placeholder data
-    
-    //for (auto& widget : boosterWidgets) {
-    //    widget.comboBox->addItems(sets);
-    //}
+    for (auto& widget : boosterWidgets) {
+        widget.comboBox->addItems(sets);
+    }
 
     setWindowTitle(tr("Sealed Pool Setup"));
     setMinimumWidth(400);
     setMinimumHeight(150);
 }
 
-void DlgSealedSetup::addCardToSealedPool(CardInfoPtr card) const
+void DlgSealedSetup::addCardToSealedPool(CardInfoPtr card, const QString& debugSlot) const
 {
     (*dbModel->getSealedPool())[card->getName()]++;
+
+    QList<CardInfoPerSet> printingsInSet = card->getSets()["FDN"];
+    QString rarity;
+    for (auto&& printing : printingsInSet)
+    {
+        rarity = printing.getProperty("rarity");
+        if (!rarity.isEmpty())
+        {
+            break;
+        }
+    }
+    if (!rarity.isEmpty())
+    {
+        qDebug() << QString("%1: %2 (%3)").arg(debugSlot).arg(card->getName()).arg(rarity);
+    }
 }
 
 void DlgSealedSetup::generateSealedPool()
 {
+    std::random_device randomEngine;
+
     for (int boosterIdx = 0; boosterIdx < boosterWidgets.size(); ++boosterIdx)
     {
-        const QString boosterName = boosterWidgets[boosterIdx].comboBox->text();
+        const QString boosterName = boosterWidgets[boosterIdx].comboBox->currentText();
 
         auto setIt = setStrings2Sets.find(boosterName);
         if (setIt == setStrings2Sets.end())
@@ -92,11 +109,24 @@ void DlgSealedSetup::generateSealedPool()
 
         // Construct card pools
         QMap<QString, BoosterCardList> cardsPerRarity;
+
         for (auto&& card : **setIt)
         {
             QList<CardInfoPerSet> printingsInSet = card->getSets()[(*setIt)->getShortName()];
+            QString rarity;
+            for(auto&& printing : printingsInSet)
+            {
+                rarity = printing.getProperty("rarity");
+                if (!rarity.isEmpty())
+                {
+                    break;
+                }
+            }
+            if (rarity.isEmpty())
+            {
+                continue;
+            }
 
-            const QString rarity = printingsInSet[0].getProperty("rarity");
             BoosterCardList& targetList = cardsPerRarity[rarity];
 
             const QString colors = card->getProperty(Mtg::Colors);
@@ -108,17 +138,28 @@ void DlgSealedSetup::generateSealedPool()
             }
         }
 
-        // Remove tokens
-        cardsPerRarity.remove("<NULL>");
-
         // Generate
-        std::array<int, 624> seed_data;
-        std::random_device r;
-        std::generate_n(seed_data.data(), seed_data.size(), std::ref(r));
-        std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
-        std::mt19937 randomEngine(seq);
 
-        QList<std::pair<QString, int>> slotsPerRarity = { {"common", 14} };
+        // rarity-based slots
+        QList<std::pair<QString, int>> slotsPerRarity;
+        {
+            slotsPerRarity.emplace_back("common", 7);
+            slotsPerRarity.emplace_back("uncommon", 3);
+
+            bool hasMythic = (randomEngine() % 7 == 0);
+            if (hasMythic)
+            {
+                slotsPerRarity.emplace_back("mythic", 1);
+            }
+            else
+            {
+                slotsPerRarity.emplace_back("rare", 1);
+            }
+        }
+
+        QList<QChar> mustInclude = { 'W', 'U', 'B', 'R', 'G' };
+        mustInclude.erase(mustInclude.begin() + (randomEngine() % 5));
+
         for (auto&& [rarity, count] : slotsPerRarity)
         {
             if (!cardsPerRarity.contains(rarity))
@@ -127,31 +168,67 @@ void DlgSealedSetup::generateSealedPool()
             }
 
             const BoosterCardList& list = cardsPerRarity[rarity];
-
-            QList<QChar> mustInclude = { 'W', 'U', 'B', 'R', 'G' };
-            mustInclude.erase(mustInclude.begin() + (randomEngine() % 5));
-
-            for (QChar color : mustInclude)
+            if (rarity == "common")
             {
-                const QList<CardInfoPtr>& colorList = list.cardsPerColors[QString(color)];
-                if (colorList.isEmpty())
+                // Color balance
+                for (QChar color : mustInclude)
                 {
-                    continue;
+                    const QList<CardInfoPtr>& colorList = list.cardsPerColors[QString(color)];
+                    if (colorList.isEmpty())
+                    {
+                        continue;
+                    }
+
+                    CardInfoPtr chosenCard = colorList[randomEngine() % colorList.size()];
+                    addCardToSealedPool(chosenCard, "colorAligned");
                 }
 
-                CardInfoPtr chosenCard = colorList[randomEngine() % colorList.size()];
-                addCardToSealedPool(chosenCard);
+                count -= mustInclude.size();
             }
-
-            count -= mustInclude.size();
 
             for (int randomCardIdx = 0; randomCardIdx < count; ++randomCardIdx)
             {
                 CardInfoPtr chosenCard = list.allCards[randomEngine() % list.allCards.size()];
-                addCardToSealedPool(chosenCard);
+                addCardToSealedPool(chosenCard, rarity + "_random");
             }
         }
+
+        // assume basic land in land slot / skip
+
+        // wildcards
+        const int wildcardSlots = 2;
+        for (int wildcardIdx = 0; wildcardIdx < wildcardSlots; ++wildcardIdx)
+        {
+            BoosterCardList* list = nullptr;
+
+            int rarityRoll = randomEngine() % 100;
+            if (rarityRoll < 70)
+            {
+                list = &cardsPerRarity["common"];
+            }
+            else if (rarityRoll < 91)
+            {
+                list = &cardsPerRarity["uncommon"];
+            }
+            else if (rarityRoll < 98)
+            {
+                list = &cardsPerRarity["rare"];
+            }
+            else
+            {
+                list = &cardsPerRarity["mythic"];
+            }
+            CardInfoPtr chosenCard = list->allCards[randomEngine() % list->allCards.size()];
+            addCardToSealedPool(chosenCard, "wildcard");
+        }
     }
+
+    // add infinite basics
+    (*dbModel->getSealedPool())["Plains"] = -1;
+    (*dbModel->getSealedPool())["Island"] = -1;
+    (*dbModel->getSealedPool())["Swamp"] = -1;
+    (*dbModel->getSealedPool())["Mountain"] = -1;
+    (*dbModel->getSealedPool())["Forest"] = -1;
 
     CardDatabaseManager::getInstance()->notifyEnabledSetsChanged();
     close();

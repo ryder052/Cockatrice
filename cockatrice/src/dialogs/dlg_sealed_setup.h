@@ -28,12 +28,12 @@ private slots:
     void generateSealedPool();
 
 private:
-    void addCardToSealedPool(CardInfoPtr card) const;
+    void addCardToSealedPool(CardInfoPtr card, const QString& debugSlot) const;
 
     struct PerBoosterWidgets
     {
         QLabel* label = nullptr;
-        QLineEdit* comboBox = nullptr;
+        QComboBox* comboBox = nullptr;
     };
     std::array<PerBoosterWidgets, 6> boosterWidgets;
 
