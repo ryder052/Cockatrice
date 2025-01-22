@@ -95,7 +95,11 @@ void DlgSealedSetup::addCardToSealedPool(CardInfoPtr card, const QString& debugS
 
 void DlgSealedSetup::generateSealedPool()
 {
-    std::random_device randomEngine;
+    std::array<int, 624> seed_data;
+    std::random_device r;
+    std::generate_n(seed_data.data(), seed_data.size(), std::ref(r));
+    std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
+    std::mt19937 randomEngine(seq);
 
     for (int boosterIdx = 0; boosterIdx < boosterWidgets.size(); ++boosterIdx)
     {
