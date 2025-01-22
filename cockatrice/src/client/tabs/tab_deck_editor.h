@@ -66,6 +66,7 @@ private slots:
     void actAddCard();
     void actAddCardToSideboard();
     void actRemoveCard();
+    void actDumpPoolToSideboard();
     void actIncrement();
     void actDecrement();
     void actDecrementCard();
@@ -142,7 +143,7 @@ private:
         *aSaveDeckToClipboard, *aSaveDeckToClipboardRaw, *aPrintDeck, *aExportDeckDecklist, *aAnalyzeDeckDeckstats,
         *aAnalyzeDeckTappedout, *aClose;
     QAction *aClearFilterAll, *aClearFilterOne;
-    QAction *aAddCard, *aAddCardToSideboard, *aRemoveCard, *aIncrement, *aDecrement;
+    QAction *aAddCard, *aAddCardToSideboard, *aRemoveCard, *aIncrement, *aDecrement, *aDumpPoolToSideboard;
     QAction *aResetLayout;
     QAction *aCardInfoDockVisible, *aCardInfoDockFloating, *aDeckDockVisible, *aDeckDockFloating, *aFilterDockVisible,
         *aFilterDockFloating, *aPrintingSelectorDockVisible, *aPrintingSelectorDockFloating;

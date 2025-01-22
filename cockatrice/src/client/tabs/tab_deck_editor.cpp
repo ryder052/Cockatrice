@@ -114,6 +114,12 @@ void TabDeckEditor::createDeckDock()
     auto *tbRemoveCard = new QToolButton(this);
     tbRemoveCard->setDefaultAction(aRemoveCard);
 
+    aDumpPoolToSideboard = new QAction(QString(), this);
+    aDumpPoolToSideboard->setIcon(QPixmap("theme:icons/arrow_right_blue"));
+    connect(aDumpPoolToSideboard, SIGNAL(triggered()), this, SLOT(actDumpPoolToSideboard()));
+    auto* tbDump = new QToolButton(this);
+    tbDump->setDefaultAction(aDumpPoolToSideboard);
+
     auto *upperLayout = new QGridLayout;
     upperLayout->setObjectName("upperLayout");
     upperLayout->addWidget(nameLabel, 0, 0);
@@ -136,10 +142,11 @@ void TabDeckEditor::createDeckDock()
     lowerLayout->setObjectName("lowerLayout");
     lowerLayout->addWidget(hashLabel1, 0, 0);
     lowerLayout->addWidget(hashLabel, 0, 1);
-    lowerLayout->addWidget(tbIncrement, 0, 2);
-    lowerLayout->addWidget(tbDecrement, 0, 3);
-    lowerLayout->addWidget(tbRemoveCard, 0, 4);
-    lowerLayout->addWidget(deckView, 1, 0, 1, 5);
+    lowerLayout->addWidget(tbDump, 0, 2);
+    lowerLayout->addWidget(tbIncrement, 0, 3);
+    lowerLayout->addWidget(tbDecrement, 0, 4);
+    lowerLayout->addWidget(tbRemoveCard, 0, 5);
+    lowerLayout->addWidget(deckView, 1, 0, 1, 6);
 
     // Create widgets for both layouts to make splitter work correctly
     auto *topWidget = new QWidget;
@@ -1325,6 +1332,21 @@ void TabDeckEditor::actSwapCard()
 
 void TabDeckEditor::actAddCard()
 {
+    const CardInfoPtr info = currentCardInfo();
+    if (!info)
+        return;
+
+    auto&& sealedPool = databaseModel->getSealedPool();
+    if (sealedPool)
+    {
+        int& amountLeft = sealedPool->find(info->getName()).value();
+        if (amountLeft == 0)
+            return;
+
+        if (amountLeft != -1)
+            amountLeft--;
+    }
+
     if (QApplication::keyboardModifiers() & Qt::ControlModifier)
         actAddCardToSideboard();
     else
@@ -1353,6 +1375,18 @@ void TabDeckEditor::actRemoveCard()
         if (!index.isValid() || deckModel->hasChildren(index)) {
             continue;
         }
+
+        auto&& sealedPool = databaseModel->getSealedPool();
+        if (sealedPool)
+        {
+            const QString cardName = index.sibling(index.row(), 1).data().toString();
+            const int count = index.sibling(index.row(), 0).data().toInt();
+
+            int& amountLeft = sealedPool->find(cardName).value();
+            if (amountLeft != -1)
+                amountLeft += count;
+        }
+
         deckModel->removeRow(index.row(), index.parent());
         modified = true;
     }
@@ -1366,10 +1400,64 @@ void TabDeckEditor::actRemoveCard()
     }
 }
 
+void TabDeckEditor::actDumpPoolToSideboard()
+{
+    auto&& sealedPool = databaseModel->getSealedPool();
+    if (!sealedPool)
+    {
+        return;
+    }
+
+    deckView->clearSelection();
+
+    for (auto poolIt = sealedPool->begin(); poolIt != sealedPool->end(); ++poolIt)
+    {
+        CardInfoPtr info = CardDatabaseManager::getInstance()->getCardBySimpleName(poolIt.key());
+        int count = poolIt.value();
+        if (count == 0)
+            continue;
+
+        if (count == -1)
+            count = 10;
+        else
+            poolIt.value() = 0;
+
+        QModelIndex newCardIndex = deckModel->addPreferredPrintingCard(info->getName(), DECK_ZONE_SIDE, false);
+        recursiveExpand(newCardIndex);
+        //deckView->setCurrentIndex(newCardIndex);
+
+        const QModelIndex numberIndex = newCardIndex.sibling(newCardIndex.row(), 0);
+        const int old_count = deckModel->data(numberIndex, Qt::EditRole).toInt() - 1;
+        const int new_count = old_count + count;
+        deckModel->setData(numberIndex, new_count, Qt::EditRole);
+    }
+
+    setModified(true);
+    searchEdit->setSelection(0, searchEdit->text().length());
+
+    setSaveStatus(true);
+}
+
 void TabDeckEditor::offsetCountAtIndex(const QModelIndex &idx, int offset)
 {
     if (!idx.isValid() || deckModel->hasChildren(idx)) {
         return;
+    }
+
+    auto&& sealedPool = databaseModel->getSealedPool();
+    if (sealedPool)
+    {
+        const QString cardName = idx.sibling(idx.row(), 1).data().toString();
+        CardInfoPtr info = CardDatabaseManager::getInstance()->getCardBySimpleName(cardName);
+
+        int& amountLeft = sealedPool->find(info->getName()).value();
+        if (amountLeft != -1)
+        {
+            if (offset > amountLeft)
+                return;
+            else
+                amountLeft -= offset;
+        }
     }
 
     const QModelIndex numberIndex = idx.sibling(idx.row(), 0);
